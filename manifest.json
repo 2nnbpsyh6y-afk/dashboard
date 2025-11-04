@@ -1,0 +1,20 @@
+{
+    "short_name": "Dashboard",
+    "name": "Mon Dashboard (L3/SIM/Ironman)",
+    "icons": [
+        {
+            "src": "icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        },
+        {
+            "src": "icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        }
+    ],
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#f4f7f6",
+    "theme_color": "#3498db"
+}
