@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3498db"/>
+</head>
+<body>
+
+    <header>
+        <h1>Mon Dashboard</h1>
+        <p id="date"></p>
+    </header>
+
+    <main class="dashboard">
+
+        <div class="column">
+            <h2>🔥 Focus du Jour</h2>
+            <ul id="focus-list" class="task-list">
+                </ul>
+            <div class="input-group">
+                <input type="text" id="focus-input" placeholder="Nouvelle tâche focus...">
+                <button onclick="addTask('focus')">+</button>
+            </div>
+        </div>
+
+        <div class="column">
+            <h2>📚 L3 Banque Finance</h2>
+            <ul id="l3-list" class="task-list">
+                </ul>
+            <div class="input-group">
+                <input type="text" id="l3-input" placeholder="Nouvelle tâche L3...">
+                <button onclick="addTask('l3')">+</button>
+            </div>
+        </div>
+
+        <div class="column">
+            <h2>🎯 Concours (SIM/TOEIC)</h2>
+            <ul id="concours-list" class="task-list">
+                </ul>
+            <div class="input-group">
+                <input type="text" id="concours-input" placeholder="Nouvelle tâche concours...">
+                <button onclick="addTask('concours')">+</button>
+            </div>
+        </div>
+
+        <div class="column">
+            <h2>🚴 Ironman</h2>
+            <ul id="ironman-list" class="task-list">
+                </ul>
+            <div class="input-group">
+                <input type="text" id="ironman-input" placeholder="Nouvel entraînement...">
+                <button onclick="addTask('ironman')">+</button>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        // Enregistre le Service Worker pour le mode hors-ligne
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service worker enregistré', reg))
+                .catch(err => console.log('Erreur Service worker', err));
+        }
+    </script>
+</body>
+</html>
