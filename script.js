@@ -15,6 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setupInputKeypress('l3');
     setupInputKeypress('concours');
     setupInputKeypress('ironman');
+    
+    // Initialise SortableJS sur les 4 listes pour le glisser-déposer
+    initSortable('focus');
+    initSortable('l3');
+    initSortable('concours');
+    initSortable('ironman');
 });
 
 function setupInputKeypress(prefix) {
@@ -52,7 +58,11 @@ function createTaskElement(taskText, prefix, isCompleted) {
     // Clique pour marquer comme "complet"
     li.addEventListener('click', () => {
         li.classList.toggle('completed');
-        saveTasks(prefix);
+        
+        // Sauvegarde la liste d'où provient la tâche
+        const listId = li.closest('.task-list').id;
+        const currentPrefix = listId.replace('-list', '');
+        saveTasks(currentPrefix);
     });
 
     // Bouton de suppression
@@ -61,8 +71,13 @@ function createTaskElement(taskText, prefix, isCompleted) {
     deleteBtn.classList.add('delete-btn');
     deleteBtn.addEventListener('click', (e) => {
         e.stopPropagation(); // Empêche le clic de marquer la tâche
+        
+        // Trouve la liste parente pour la sauvegarde
+        const listId = li.closest('.task-list').id;
+        const currentPrefix = listId.replace('-list', '');
+        
         li.remove();
-        saveTasks(prefix);
+        saveTasks(currentPrefix);
     });
 
     li.appendChild(deleteBtn);
@@ -92,5 +107,35 @@ function loadTasks(prefix) {
     tasks.forEach(task => {
         const taskElement = createTaskElement(task.text, prefix, task.completed);
         taskList.appendChild(taskElement);
+    });
+}
+
+// ===========================================
+// CODE AJOUTÉ POUR LE GLISSER-DEPOSER
+// ===========================================
+function initSortable(prefix) {
+    const list = document.getElementById(`${prefix}-list`);
+    
+    new Sortable(list, {
+        group: 'shared', // Le nom magique qui permet de glisser entre les listes
+        animation: 150,   // Petite animation
+        ghostClass: 'sortable-ghost', // Style de la tâche fantôme (optionnel)
+
+        // Fonction appelée à la fin d'un glisser-déposer
+        onEnd: function (evt) {
+            // evt.from = la liste d'origine
+            // evt.to = la nouvelle liste
+            
+            const originPrefix = evt.from.id.replace('-list', '');
+            const destinationPrefix = evt.to.id.replace('-list', '');
+
+            // On sauvegarde les deux listes qui ont été modifiées
+            saveTasks(originPrefix);
+            
+            // Si la tâche a changé de colonne, on sauvegarde aussi la nouvelle colonne
+            if (originPrefix !== destinationPrefix) {
+                saveTasks(destinationPrefix);
+            }
+        }
     });
 }
