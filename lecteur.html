@@ -21,9 +21,9 @@
     <h1>🎙️ Lecteur IAE</h1>
 
     <div class="controls">
-        <button class="refresh" onclick="forceLoadVoices()">🔄 1. Charger les Voix (Cliquer ici)</button>
+        <button class="refresh" onclick="forceLoadVoices()">🔄 1. Charger les Voix FR</button>
 
-        <label>Voix détectées :</label>
+        <label>Voix disponibles :</label>
         <select id="voices">
             <option>Clique sur le bouton vert ⬆️</option>
         </select>
@@ -51,13 +51,10 @@ Réponse : ..."></textarea>
         const synth = window.speechSynthesis;
         let voices = [];
 
-        // --- FONCTION DE CHARGEMENT MANUEL ---
         function forceLoadVoices() {
-            // On demande à l'iPhone de récupérer la liste
             voices = synth.getVoices();
             const voiceSelect = document.getElementById('voices');
             
-            // DEBUG : Si vide, on retente dans 100ms
             if (voices.length === 0) {
                 setTimeout(forceLoadVoices, 100);
                 return;
@@ -65,37 +62,34 @@ Réponse : ..."></textarea>
 
             voiceSelect.innerHTML = ''; 
             
-            // FILTRE LARGE : On prend tout ce qui contient 'fr' ou 'Fr'
-            // Pour être sûr de voir Audrey même si elle est mal nommée
-            const frVoices = voices.filter(v => v.lang.includes('fr') || v.name.includes('French'));
+            // --- FILTRE DRASTIQUE ---
+            // On ne garde QUE les voix dont la langue commence strictement par 'fr'
+            const frVoices = voices.filter(v => v.lang.startsWith('fr'));
 
             if (frVoices.length === 0) {
                 const opt = document.createElement('option');
-                opt.textContent = "Aucune voix FR trouvée (Vérifie Réglages)";
+                opt.textContent = "Aucune voix FR (Vérifie tes réglages)";
                 voiceSelect.appendChild(opt);
             } else {
                 frVoices.forEach((voice) => {
                     const option = document.createElement('option');
-                    
-                    // Nettoyage visuel du nom
-                    let cleanName = voice.name.replace('French', '').replace('(France)', '').trim();
+                    // Nettoyage du nom
+                    let cleanName = voice.name.replace('French', '').replace('(France)', '').replace('Enhanced', 'Premium').trim();
                     option.textContent = cleanName;
                     option.value = voices.indexOf(voice);
                     voiceSelect.appendChild(option);
 
-                    // SI AUDREY EST LÀ, ON LA PREND
+                    // SI AUDREY EST LÀ, ON LA PREND DIRECT
                     if (voice.name.includes('Audrey')) {
                         voiceSelect.value = option.value;
                     }
                 });
-                document.querySelector('.refresh').textContent = "✅ Voix chargées (" + frVoices.length + ")";
+                document.querySelector('.refresh').textContent = "✅ " + frVoices.length + " Voix FR trouvées";
             }
         }
 
-        // Essai auto au démarrage (marche sur Android/PC, rarement sur iOS)
         setTimeout(forceLoadVoices, 500);
 
-        // --- LECTEUR ---
         function stopReading() {
             synth.cancel();
             document.getElementById('statusDisplay').textContent = "Arrêté";
@@ -124,7 +118,6 @@ Réponse : ..."></textarea>
                 statusDisplay.textContent = "🔊 " + line;
                 const utterance = new SpeechSynthesisUtterance(line);
                 
-                // On force la voix choisie
                 if (voiceIndex && voices[voiceIndex]) {
                     utterance.voice = voices[voiceIndex];
                 }
@@ -138,7 +131,6 @@ Réponse : ..."></textarea>
                 
                 await new Promise(r => setTimeout(r, 500));
             }
-            
             statusDisplay.textContent = "✅ Terminé !";
         }
     </script>
