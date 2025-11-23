@@ -1,35 +1,46 @@
-const CACHE_NAME = 'dashboard-v2';
+// Changement de version pour forcer la mise à jour
+const CACHE_NAME = 'dashboard-v3'; 
+
 const urlsToCache = [
     '.',
     'index.html',
+    'lecteur.html',  // J'ai ajouté le lecteur ici !
     'style.css',
     'script.js',
-    'manifest.json'
-    // Tu devras ajouter 'icon-192.png' et 'icon-512.png' ici
+    'manifest.json',
+    'https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js'
 ];
 
-// Installation du Service Worker
 self.addEventListener('install', event => {
+    self.skipWaiting(); // Force le nouveau service worker à s'installer immédiatement
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                console.log('Cache ouvert');
+                console.log('Mise en cache des fichiers v3');
                 return cache.addAll(urlsToCache);
             })
     );
 });
 
-// Stratégie "Cache first"
+self.addEventListener('activate', event => {
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cacheName => {
+                    if (cacheName !== CACHE_NAME) {
+                        return caches.delete(cacheName); // Supprime l'ancien cache
+                    }
+                })
+            );
+        })
+    );
+});
+
 self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
             .then(response => {
-                // Si la ressource est dans le cache, on la retourne
-                if (response) {
-                    return response;
-                }
-                // Sinon, on va la chercher sur le réseau
-                return fetch(event.request);
+                return response || fetch(event.request);
             })
     );
 });
