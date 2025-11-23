@@ -14,59 +14,53 @@
     <header>
         <h1>Mon Dashboard</h1>
         <p id="date"></p>
+        <a href="lecteur.html" style="display:inline-block; background:white; color:#3498db; padding:8px 15px; margin-top:10px; text-decoration:none; border-radius:20px; font-weight:bold; font-size:0.9rem;">
+            🎙️ Ouvrir le Lecteur Quiz
+        </a>
     </header>
 
     <main class="dashboard">
-
         <div class="column">
             <h2>🔥 Focus du Jour</h2>
-            <ul id="focus-list" class="task-list">
-                </ul>
             <div class="input-group">
-                <input type="text" id="focus-input" placeholder="Nouvelle tâche focus...">
+                <input type="text" id="focus-input" placeholder="Ajouter...">
                 <button onclick="addTask('focus')">+</button>
             </div>
+            <ul id="focus-list" class="task-list"></ul>
         </div>
 
         <div class="column">
             <h2>📚 L3 Banque Finance</h2>
-            <ul id="l3-list" class="task-list">
-                </ul>
             <div class="input-group">
-                <input type="text" id="l3-input" placeholder="Nouvelle tâche L3...">
+                <input type="text" id="l3-input" placeholder="Ajouter...">
                 <button onclick="addTask('l3')">+</button>
             </div>
+            <ul id="l3-list" class="task-list"></ul>
         </div>
 
         <div class="column">
-            <h2>🎯 Concours (SIM/TOEIC)</h2>
-            <ul id="concours-list" class="task-list">
-                </ul>
+            <h2>🎯 Concours</h2>
             <div class="input-group">
-                <input type="text" id="concours-input" placeholder="Nouvelle tâche concours...">
+                <input type="text" id="concours-input" placeholder="Ajouter...">
                 <button onclick="addTask('concours')">+</button>
             </div>
+            <ul id="concours-list" class="task-list"></ul>
         </div>
 
         <div class="column">
             <h2>🚴 Ironman</h2>
-            <ul id="ironman-list" class="task-list">
-                </ul>
             <div class="input-group">
-                <input type="text" id="ironman-input" placeholder="Nouvel entraînement...">
+                <input type="text" id="ironman-input" placeholder="Ajouter...">
                 <button onclick="addTask('ironman')">+</button>
             </div>
+            <ul id="ironman-list" class="task-list"></ul>
         </div>
-
     </main>
 
     <script src="script.js"></script>
     <script>
-        // Enregistre le Service Worker pour le mode hors-ligne
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js')
-                .then(reg => console.log('Service worker enregistré', reg))
-                .catch(err => console.log('Erreur Service worker', err));
+            navigator.serviceWorker.register('service-worker.js');
         }
     </script>
 </body>
