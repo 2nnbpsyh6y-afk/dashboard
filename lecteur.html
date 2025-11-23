@@ -3,44 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lecteur Quiz IAE (V3)</title>
+    <title>Lecteur IAE (Final)</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f4f7f6; padding: 20px; text-align: center; padding-bottom: 80px;}
-        textarea { width: 100%; height: 150px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box;}
-        .controls { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        button { background-color: #3498db; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 50px; cursor: pointer; margin: 5px; width:100%; font-weight:bold;}
-        button.refresh { background-color: #27ae60; margin-bottom: 15px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f7f6; padding: 20px; text-align: center; padding-bottom: 80px;}
+        textarea { width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box; font-family: monospace;}
+        .controls { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: left;}
+        button { background-color: #3498db; color: white; border: none; padding: 15px 20px; font-size: 18px; border-radius: 10px; cursor: pointer; margin: 5px 0; width: 100%; font-weight: bold;}
         button.stop { background-color: #e74c3c; }
-        label { display: block; margin: 10px 0 5px; font-weight: bold; }
-        select { width: 100%; padding: 12px; margin-top: 5px; border: 2px solid #3498db; border-radius: 8px; font-weight: bold; font-size: 16px; background: white;}
-        .debug-info { font-size: 0.8rem; color: #555; margin-top: 10px; text-align: left; background: #eee; padding: 10px; border-radius: 5px; display: none;}
-        .status { font-size: 1.2rem; margin-top: 20px; color: #555; font-weight: bold; }
+        button.refresh { background-color: #27ae60; }
+        button.back { background-color: #95a5a6; margin-bottom: 20px;}
+        select, input[type=text] { width: 100%; padding: 12px; border: 2px solid #3498db; border-radius: 8px; font-size: 16px; background: #fff; margin-bottom: 15px; box-sizing: border-box; font-weight: bold;}
+        label { display: block; margin: 10px 0 5px; font-weight: bold; color: #333; }
+        .status { font-size: 1.2rem; margin-top: 20px; color: #555; font-weight: bold; text-align: center;}
+        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
     </style>
 </head>
 <body>
 
-    <h1>🎙️ Lecteur V3 (Scanner)</h1>
+    <button class="back" onclick="window.location.href='index.html'">⬅️ Retour au Dashboard</button>
+
+    <h1>🎙️ Lecteur IAE (Thomas)</h1>
 
     <div class="controls">
-        <button class="refresh" onclick="forceLoadVoices()">🔄 SCANNER LES VOIX</button>
-        
-        <label>Choisis ta voix manuellement :</label>
+        <button class="refresh" onclick="forceLoadVoices()">🔄 1. Charger Thomas</button>
+
+        <label>Voix (Thomas sélectionné par défaut) :</label>
         <select id="voices">
-            <option>Clique sur Scanner ⬆️</option>
+            <option>Clique sur le bouton vert...</option>
         </select>
 
-        <div id="debugBox" class="debug-info"></div>
-
-        <hr style="margin: 20px 0; border:0; border-top:1px solid #eee;">
-
         <label>Pause réflexion : <span id="pauseVal">4</span> sec</label>
-        <input type="range" id="pauseTime" min="1" max="15" value="4" style="width:100%" oninput="document.getElementById('pauseVal').textContent = this.value">
+        <input type="range" id="pauseTime" min="1" max="10" value="4" style="width:100%" oninput="document.getElementById('pauseVal').textContent = this.value">
+        
+        <hr>
 
-        <label>Vitesse :</label>
-        <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1.0" style="width:100%">
-
-        <br><br>
-        <button onclick="startReading()">▶️ Lire le Quiz</button>
+        <button onclick="startReading()">▶️ 2. Lire le Quiz</button>
         <button class="stop" onclick="stopReading()">⏹️ Stop</button>
     </div>
 
@@ -53,76 +50,94 @@
 
         function forceLoadVoices() {
             voices = synth.getVoices();
-            const voiceSelect = document.getElementById('voices');
-            const debugBox = document.getElementById('debugBox');
             
             if (voices.length === 0) {
                 setTimeout(forceLoadVoices, 100);
                 return;
             }
 
+            const voiceSelect = document.getElementById('voices');
             voiceSelect.innerHTML = ''; 
-            debugBox.style.display = 'block';
-            debugBox.innerHTML = "<strong>Diagnostic Système :</strong><br>";
+            
+            // FILTRE : On garde SEULEMENT 'fr-FR' (France)
+            // On exclut Canada (CA), Belgique (BE), Suisse (CH)
+            const frVoices = voices.filter(v => v.lang === 'fr-FR');
 
-            // FILTRE LARGE : On prend tout ce qui contient 'fr'
-            const frVoices = voices.filter(v => v.lang.includes('fr'));
+            let thomasFound = false;
 
             if (frVoices.length === 0) {
                 const opt = document.createElement('option');
-                opt.textContent = "Aucune voix FR détectée.";
+                opt.textContent = "Aucune voix France trouvée";
                 voiceSelect.appendChild(opt);
             } else {
                 frVoices.forEach((voice) => {
                     const option = document.createElement('option');
-                    
-                    // Affiche le VRAI nom technique pour qu'on comprenne
-                    let displayName = voice.name + " (" + voice.lang + ")";
-                    
-                    option.textContent = displayName;
-                    option.value = voices.indexOf(voice);
+                    // On affiche le nom simple
+                    option.textContent = voice.name.replace('French (France)', '').trim();
+                    option.value = voices.indexOf(voice); // Index global
                     voiceSelect.appendChild(option);
 
-                    // Ajoute au rapport de diagnostic
-                    debugBox.innerHTML += "- " + displayName + "<br>";
+                    // SI C'EST THOMAS, ON LE SELECTIONNE DIRECT
+                    if (voice.name.includes('Thomas')) {
+                        voiceSelect.value = option.value;
+                        thomasFound = true;
+                    }
                 });
                 
-                document.querySelector('.refresh').textContent = "✅ " + frVoices.length + " Voix trouvées";
+                // Feedback visuel
+                const btn = document.querySelector('.refresh');
+                if(thomasFound) {
+                    btn.textContent = "✅ Thomas Chargé !";
+                    btn.style.backgroundColor = "#2ecc71";
+                } else {
+                    btn.textContent = "⚠️ Thomas introuvable";
+                    btn.style.backgroundColor = "#f39c12";
+                }
             }
         }
 
+        // Chargement auto
         setTimeout(forceLoadVoices, 500);
 
         function stopReading() {
             synth.cancel();
-            document.getElementById('statusDisplay').textContent = "Arrêté";
+            document.getElementById('statusDisplay').textContent = "Arrêté ⏹️";
         }
 
         async function startReading() {
             stopReading();
             const text = document.getElementById('textInput').value;
             const pauseTime = document.getElementById('pauseTime').value * 1000;
-            const rate = document.getElementById('rate').value;
             const voiceIndex = document.getElementById('voices').value;
             const lines = text.split('\n');
             const statusDisplay = document.getElementById('statusDisplay');
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
-                if (line === "" || line === "..." || line.includes("<break")) {
-                    statusDisplay.textContent = "⏳ Pause...";
+                if (!line) continue;
+
+                if (line === "..." || line.includes("<break")) {
+                    statusDisplay.textContent = "⏳ Réflexion (" + (pauseTime/1000) + "s)...";
                     await new Promise(r => setTimeout(r, pauseTime));
-                    continue; 
+                    continue;
                 }
+
                 statusDisplay.textContent = "🔊 " + line;
                 const utterance = new SpeechSynthesisUtterance(line);
-                if (voiceIndex && voices[voiceIndex]) utterance.voice = voices[voiceIndex];
-                utterance.rate = rate;
+                
+                // Application de la voix choisie
+                if (voiceIndex && voices[voiceIndex]) {
+                    utterance.voice = voices[voiceIndex];
+                }
+                
+                utterance.rate = 1.1; // Un peu dynamique
+
                 await new Promise(resolve => {
                     utterance.onend = resolve;
                     synth.speak(utterance);
                 });
-                await new Promise(r => setTimeout(r, 500));
+                
+                await new Promise(r => setTimeout(r, 500)); // Petite pause naturelle
             }
             statusDisplay.textContent = "✅ Terminé !";
         }
