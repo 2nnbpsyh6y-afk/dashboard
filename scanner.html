@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner Voix (V3)</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f0f2f5; padding: 20px; text-align: center; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        button { background-color: #2ecc71; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 50px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 15px;}
+        select { width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; background: white; }
+        .log-box { text-align: left; background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; height: 200px; overflow-y: auto; margin-top: 20px;}
+        h1 { color: #2c3e50; }
+    </style>
+</head>
+<body>
+
+    <h1>🕵️ Scanner de Voix V3</h1>
+    
+    <div class="card">
+        <p>Clique ci-dessous pour forcer l'iPhone à lister ses voix.</p>
+        <button onclick="scanVoices()">🔄 LANCER LE SCAN</button>
+        
+        <label style="display:block; margin-bottom:5px; font-weight:bold;">Résultat :</label>
+        <select id="voiceList">
+            <option>En attente...</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <h3>Journal Technique (Prends une capture)</h3>
+        <div id="consoleLog" class="log-box">Prêt...</div>
+    </div>
+
+    <script>
+        function log(msg) {
+            const box = document.getElementById('consoleLog');
+            box.innerHTML += ">> " + msg + "<br>";
+            console.log(msg);
+        }
+
+        function scanVoices() {
+            log("Démarrage du scan...");
+            const synth = window.speechSynthesis;
+            
+            // Force un "appel" vide pour réveiller le moteur vocal iOS
+            const utter = new SpeechSynthesisUtterance('');
+            synth.speak(utter); 
+            synth.cancel();
+
+            setTimeout(() => {
+                let voices = synth.getVoices();
+                const select = document.getElementById('voiceList');
+                select.innerHTML = "";
+
+                log("Nombre de voix trouvées : " + voices.length);
+
+                if (voices.length === 0) {
+                    log("⚠️ LISTE VIDE ! iOS bloque l'accès.");
+                    log("Essaie de recharger la page.");
+                    const opt = document.createElement('option');
+                    opt.textContent = "Aucune voix détectée";
+                    select.appendChild(opt);
+                    return;
+                }
+
+                // On cherche tout ce qui ressemble à du français
+                const frVoices = voices.filter(v => v.lang.toLowerCase().includes('fr'));
+                
+                if(frVoices.length > 0) {
+                    log("✅ " + frVoices.length + " voix FR trouvées !");
+                    frVoices.forEach((v, i) => {
+                        log("[" + i + "] " + v.name + " (" + v.lang + ")");
+                        const opt = document.createElement('option');
+                        opt.textContent = v.name + " (" + v.lang + ")";
+                        opt.value = i; // Juste pour l'exemple
+                        select.appendChild(opt);
+                    });
+                } else {
+                    log("❌ Aucune voix FR. Liste brute :");
+                    voices.slice(0, 5).forEach(v => log(v.name + " (" + v.lang + ")")); // Affiche les 5 premières
+                }
+
+            }, 500); // Petit délai pour laisser iOS réagir
+        }
+        
+        // Scan auto au chargement
+        window.onload = () => setTimeout(scanVoices, 1000);
+    </script>
+</body>
+</html>
