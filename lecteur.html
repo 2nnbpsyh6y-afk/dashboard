@@ -3,33 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lecteur Quiz IAE</title>
+    <title>Lecteur Quiz IAE (V3)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f4f7f6; padding: 20px; text-align: center; padding-bottom: 80px;}
-        textarea { width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box;}
+        textarea { width: 100%; height: 150px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box;}
         .controls { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
         button { background-color: #3498db; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 50px; cursor: pointer; margin: 5px; width:100%; font-weight:bold;}
-        button.stop { background-color: #e74c3c; }
         button.refresh { background-color: #27ae60; margin-bottom: 15px; }
+        button.stop { background-color: #e74c3c; }
         label { display: block; margin: 10px 0 5px; font-weight: bold; }
         select { width: 100%; padding: 12px; margin-top: 5px; border: 2px solid #3498db; border-radius: 8px; font-weight: bold; font-size: 16px; background: white;}
+        .debug-info { font-size: 0.8rem; color: #555; margin-top: 10px; text-align: left; background: #eee; padding: 10px; border-radius: 5px; display: none;}
         .status { font-size: 1.2rem; margin-top: 20px; color: #555; font-weight: bold; }
-        .warning { color: red; font-size: 0.9rem; margin-top: 5px; display:none;}
     </style>
 </head>
 <body>
 
-    <h1>🎙️ Lecteur IAE (Version V2)</h1>
+    <h1>🎙️ Lecteur V3 (Scanner)</h1>
 
     <div class="controls">
-        <button class="refresh" onclick="forceLoadVoices()">🔄 1. Charger les Voix FR</button>
+        <button class="refresh" onclick="forceLoadVoices()">🔄 SCANNER LES VOIX</button>
         
-        <div id="missingAudrey" class="warning">⚠️ Audrey introuvable. Vérifie qu'elle est bien téléchargée dans Réglages > Accessibilité.</div>
-
-        <label>Choix de la voix :</label>
+        <label>Choisis ta voix manuellement :</label>
         <select id="voices">
-            <option>Clique sur le bouton vert ⬆️</option>
+            <option>Clique sur Scanner ⬆️</option>
         </select>
+
+        <div id="debugBox" class="debug-info"></div>
 
         <hr style="margin: 20px 0; border:0; border-top:1px solid #eee;">
 
@@ -40,14 +40,11 @@
         <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1.0" style="width:100%">
 
         <br><br>
-        <button onclick="startReading()">▶️ 2. Lire le Quiz</button>
+        <button onclick="startReading()">▶️ Lire le Quiz</button>
         <button class="stop" onclick="stopReading()">⏹️ Stop</button>
     </div>
 
-    <textarea id="textInput" placeholder="Colle ton script ici...
-Question 1 : ...
-Réponse : ..."></textarea>
-
+    <textarea id="textInput" placeholder="Colle ton script ici..."></textarea>
     <div class="status" id="statusDisplay">Prêt</div>
 
     <script>
@@ -57,59 +54,43 @@ Réponse : ..."></textarea>
         function forceLoadVoices() {
             voices = synth.getVoices();
             const voiceSelect = document.getElementById('voices');
-            const warning = document.getElementById('missingAudrey');
+            const debugBox = document.getElementById('debugBox');
             
-            // Si la liste est vide, on réessaie
             if (voices.length === 0) {
                 setTimeout(forceLoadVoices, 100);
                 return;
             }
 
             voiceSelect.innerHTML = ''; 
-            
-            // --- FILTRE STRICT : Uniquement les voix qui contiennent 'fr' ou 'French' ---
-            // On jette Grandma, Rocko et les autres
-            const frVoices = voices.filter(v => v.lang.includes('fr') || v.lang.includes('FR') || v.name.includes('French'));
+            debugBox.style.display = 'block';
+            debugBox.innerHTML = "<strong>Diagnostic Système :</strong><br>";
 
-            let audreyFound = false;
+            // FILTRE LARGE : On prend tout ce qui contient 'fr'
+            const frVoices = voices.filter(v => v.lang.includes('fr'));
 
             if (frVoices.length === 0) {
                 const opt = document.createElement('option');
-                opt.textContent = "Aucune voix FR trouvée (Bug iOS)";
+                opt.textContent = "Aucune voix FR détectée.";
                 voiceSelect.appendChild(opt);
             } else {
                 frVoices.forEach((voice) => {
                     const option = document.createElement('option');
                     
-                    // Nettoyage du nom
-                    let cleanName = voice.name.replace('French', '').replace('(France)', '').replace('(Canada)', '').replace('Enhanced', '').trim();
+                    // Affiche le VRAI nom technique pour qu'on comprenne
+                    let displayName = voice.name + " (" + voice.lang + ")";
                     
-                    // On ajoute le pays pour être sûr
-                    if(voice.lang.includes('CA')) cleanName += " (Québec)";
-                    
-                    option.textContent = cleanName;
+                    option.textContent = displayName;
                     option.value = voices.indexOf(voice);
                     voiceSelect.appendChild(option);
 
-                    // SI C'EST AUDREY, ON LA SELECTIONNE
-                    if (voice.name.includes('Audrey')) {
-                        voiceSelect.value = option.value;
-                        audreyFound = true;
-                    }
+                    // Ajoute au rapport de diagnostic
+                    debugBox.innerHTML += "- " + displayName + "<br>";
                 });
                 
-                document.querySelector('.refresh').textContent = "✅ " + frVoices.length + " Voix FR chargées";
-            }
-
-            // Si on n'a pas trouvé Audrey, on affiche l'alerte rouge
-            if (!audreyFound) {
-                warning.style.display = "block";
-            } else {
-                warning.style.display = "none";
+                document.querySelector('.refresh').textContent = "✅ " + frVoices.length + " Voix trouvées";
             }
         }
 
-        // Essai auto
         setTimeout(forceLoadVoices, 500);
 
         function stopReading() {
@@ -119,38 +100,28 @@ Réponse : ..."></textarea>
 
         async function startReading() {
             stopReading();
-            
             const text = document.getElementById('textInput').value;
             const pauseTime = document.getElementById('pauseTime').value * 1000;
             const rate = document.getElementById('rate').value;
             const voiceIndex = document.getElementById('voices').value;
-            
             const lines = text.split('\n');
             const statusDisplay = document.getElementById('statusDisplay');
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
-                
                 if (line === "" || line === "..." || line.includes("<break")) {
                     statusDisplay.textContent = "⏳ Pause...";
                     await new Promise(r => setTimeout(r, pauseTime));
                     continue; 
                 }
-
                 statusDisplay.textContent = "🔊 " + line;
                 const utterance = new SpeechSynthesisUtterance(line);
-                
-                if (voiceIndex && voices[voiceIndex]) {
-                    utterance.voice = voices[voiceIndex];
-                }
-                
+                if (voiceIndex && voices[voiceIndex]) utterance.voice = voices[voiceIndex];
                 utterance.rate = rate;
-
                 await new Promise(resolve => {
                     utterance.onend = resolve;
                     synth.speak(utterance);
                 });
-                
                 await new Promise(r => setTimeout(r, 500));
             }
             statusDisplay.textContent = "✅ Terminé !";
