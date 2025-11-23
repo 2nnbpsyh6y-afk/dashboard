@@ -3,96 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lecteur Natif iOS</title>
+    <title>Lecteur Manuel iOS</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #fff; padding: 20px; max-width: 800px; margin: 0 auto; color: #111;}
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #fff; padding: 20px; max-width: 800px; margin: 0 auto; color: #111;}
         
-        /* Zone de contrôle (cachée quand on lit ?) Non, on garde simple */
-        .controls { background: #f4f7f6; padding: 20px; border-radius: 15px; margin-bottom: 30px; text-align: center;}
-        
-        select { width: 100%; padding: 12px; border: 2px solid #3498db; border-radius: 8px; font-size: 16px; font-weight: bold; margin-bottom: 10px;}
-        
-        /* Le texte à lire est rendu très lisible pour l'iPad */
-        #readerZone { 
-            font-size: 22px; 
-            line-height: 1.6; 
-            white-space: pre-wrap; /* Garde les sauts de ligne */
-            text-align: left;
-            padding: 20px;
-            border: 1px dashed #ccc;
-            border-radius: 10px;
-            min-height: 300px;
+        /* Boutons de navigation */
+        .nav-bar { margin-bottom: 20px; display: flex; justify-content: space-between; }
+        button { padding: 12px 20px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-back { background-color: #ecf0f1; color: #333; }
+        .btn-action { background-color: #3498db; color: white; width: 100%; margin-top: 10px;}
+        .btn-reset { background-color: #e74c3c; color: white; display: none;} /* Caché par défaut */
+
+        /* Zone de saisie (Mode Édition) */
+        #inputZone {
+            width: 100%;
+            height: 300px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 16px;
+            font-family: monospace;
+            box-sizing: border-box;
+            display: block;
         }
 
-        .hidden-textarea { display: none; } /* On cache la zone de saisie moche */
-        
-        h1 { text-align: center; color: #3498db; }
-        
-        .instruction { font-size: 0.9rem; color: #666; margin-top: 10px; background: #fff3cd; padding: 10px; border-radius: 5px; display: inline-block;}
+        /* Zone de lecture (Mode Lecture) - Cachée au début */
+        #readerZone {
+            display: none;
+            font-size: 24px; /* Gros pour bien voir */
+            line-height: 1.6;
+            text-align: left;
+            padding: 20px;
+            white-space: pre-wrap; /* Respecte les sauts de ligne */
+        }
+
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
+        .tip { background: #fff3cd; padding: 10px; border-radius: 8px; font-size: 0.9rem; color: #856404; margin-bottom: 15px; text-align: center;}
     </style>
 </head>
 <body>
 
-    <h1>🎙️ Lecteur Premium (Via iOS)</h1>
-
-    <div class="controls">
-        <button onclick="window.location.href='index.html'" style="margin-bottom:15px; padding:10px; background:#95a5a6; color:white; border:none; border-radius:5px;">⬅️ Retour</button>
-        
-        <select id="quizSelector" onchange="loadQuiz()">
-            <option value="">-- 1. Choisis ton Quiz --</option>
-            <option value="actu">🌍 Actu Expert</option>
-            <option value="maths">🧮 Maths Mental</option>
-            <option value="fr">🇫🇷 Français</option>
-            <option value="bible1">📚 Bible IAE (1-37)</option>
-            <option value="bible2">📚 Bible IAE (38-75)</option>
-            <option value="bible3">📚 Bible IAE (76-113)</option>
-            <option value="bible4">📚 Bible IAE (114-150)</option>
-            <option value="bible5">📚 Bible IAE (151-190)</option>
-            <option value="bible6">📚 Bible IAE (191-224)</option>
-        </select>
-
-        <p class="instruction">
-            👉 <b>Astuce :</b> Une fois le texte affiché ci-dessous, appuie sur le <b>bouton gris rond</b> de ton iPad (ou balaie avec 2 doigts depuis le haut) pour lancer la lecture Haute Qualité.
-        </p>
+    <div class="nav-bar">
+        <button class="btn-back" onclick="window.location.href='index.html'">⬅️ Retour</button>
+        <button class="btn-reset" id="resetBtn" onclick="resetMode()">✏️ Modifier le texte</button>
     </div>
 
-    <div id="readerZone">Sélectionne un quiz ci-dessus...</div>
+    <h1>🎙️ Lecteur Manuel</h1>
+
+    <div id="editContainer">
+        <div class="tip">
+            Colle ton texte ci-dessous. Utilise des sauts de ligne ou des points "." pour marquer les pauses.
+        </div>
+        <textarea id="inputZone" placeholder="Exemple :
+Quelle est la capitale de la France ?
+.
+.
+Réponse : Paris."></textarea>
+        <button class="btn-action" onclick="startMode()">✅ Valider pour Lecture</button>
+    </div>
+
+    <div id="readerZone"></div>
 
     <script>
-        // --- BANQUE DE QUIZ (A COMPLETER AVEC TES TEXTES) ---
-        const QUIZZES = {
-            "actu": `Qui a été nommé Premier Ministre le 5 septembre 2024 ?
-.
-.
-Réponse : Michel Barnier.
-.
-Quel pays accueille la COP29 en novembre 2024 ?
-.
-.
-Réponse : L'Azerbaïdjan.`,
-            
-            "bible1": `Quelle est en 2023 la ville la plus peuplée du monde ?
-.
-.
-Réponse : Tokyo.
-.
-Quelles sont les deux cryptomonnaies les plus valorisées ?
-.
-.
-Réponse : Le Bitcoin et l'Ethereum.`
-            // ... (Tu devras remettre tes gros blocs de texte ici)
-        };
+        // Sauvegarde automatique du texte pour ne pas le perdre
+        const savedText = localStorage.getItem('manualText');
+        if (savedText) {
+            document.getElementById('inputZone').value = savedText;
+        }
 
-        function loadQuiz() {
-            const val = document.getElementById('quizSelector').value;
-            const zone = document.getElementById('readerZone');
+        function startMode() {
+            const text = document.getElementById('inputZone').value;
+            if (!text.trim()) return alert("Colle du texte d'abord !");
+
+            // Sauvegarde
+            localStorage.setItem('manualText', text);
+
+            // Bascule l'affichage
+            document.getElementById('editContainer').style.display = 'none';
+            const reader = document.getElementById('readerZone');
+            reader.style.display = 'block';
             
-            if(QUIZZES[val]) {
-                // On remplace les ... par des points simples pour que Siri fasse une pause plus naturelle
-                zone.innerText = QUIZZES[val]; 
-            } else {
-                zone.innerText = "Choisis un quiz...";
-            }
+            // Affiche le texte proprement
+            reader.innerText = text;
+
+            // Affiche le bouton "Modifier"
+            document.getElementById('resetBtn').style.display = 'block';
+            
+            // Petit message temporaire
+            alert("Texte prêt ! Active maintenant le contrôleur vocal de ton iPad.");
+        }
+
+        function resetMode() {
+            document.getElementById('editContainer').style.display = 'block';
+            document.getElementById('readerZone').style.display = 'none';
+            document.getElementById('resetBtn').style.display = 'none';
         }
     </script>
 </body>
