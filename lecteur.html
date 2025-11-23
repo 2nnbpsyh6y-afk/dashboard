@@ -3,116 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lecteur Manuel</title>
+    <title>Lecteur Manuel + Pause</title>
     <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background-color: #fff; 
-            padding: 20px; 
-            max-width: 800px; 
-            margin: 0 auto; 
-            color: #111;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #fff; padding: 20px; max-width: 800px; margin: 0 auto; text-align: center; color: #333;}
         
-        /* HEADER */
-        .header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;}
-        h1 { margin: 0; font-size: 1.2rem; color: #2c3e50; }
+        /* CONTRÔLES */
+        .controls { background: #f8f9fa; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #eee;}
+        
+        label { display: block; margin: 10px 0 5px; font-weight: bold; font-size: 0.9rem;}
+        
+        select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; background: white; font-size: 16px; margin-bottom: 10px;}
+        
+        input[type=range] { width: 100%; margin-bottom: 15px; }
         
         /* BOUTONS */
-        button { 
-            padding: 12px 20px; 
-            border-radius: 8px; 
-            border: none; 
-            font-size: 16px; 
-            font-weight: bold; 
-            cursor: pointer; 
-        }
-        .btn-back { background-color: #ecf0f1; color: #333; text-decoration: none; padding: 10px 15px; border-radius: 8px; font-size: 0.9rem;}
-        .btn-action { background-color: #3498db; color: white; width: 100%; margin-top: 15px; font-size: 1.2rem;}
-        .btn-edit { background-color: #f39c12; color: white; display: none; } /* Caché au début */
+        button { padding: 12px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; color: white; width: 100%; margin-bottom: 10px;}
+        .btn-load { background-color: #27ae60; }
+        .btn-play { background-color: #3498db; font-size: 1.2rem; padding: 15px;}
+        .btn-stop { background-color: #e74c3c; }
+        .btn-back { background-color: #95a5a6; width: auto; padding: 8px 15px; font-size: 0.9rem; margin-bottom: 15px;}
 
-        /* ZONE DE SAISIE (MODE EDIT) */
-        #inputZone {
+        /* ZONE DE TEXTE */
+        textarea {
             width: 100%;
-            height: 60vh; /* Prend 60% de la hauteur de l'écran */
-            border: 2px solid #eee;
+            height: 300px;
+            border: 2px solid #ddd;
             border-radius: 12px;
-            padding: 20px;
-            font-size: 18px;
-            font-family: -apple-system, sans-serif;
+            padding: 15px;
+            font-size: 16px;
+            font-family: monospace; /* Pour bien aligner le texte */
             box-sizing: border-box;
-            display: block;
             resize: none;
         }
 
-        /* ZONE DE LECTURE (MODE READ) */
-        #readerZone {
+        /* STATUT PENDANT LECTURE */
+        #statusBox {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            padding: 15px;
+            border-radius: 10px;
+            background: #e8f4fd;
             display: none; /* Caché au début */
-            font-size: 26px; /* Très gros pour que l'iPad lise bien */
-            line-height: 1.6;
-            text-align: left;
-            padding: 10px;
-            white-space: pre-wrap; /* Garde les sauts de ligne */
-        }
-
-        .instruction {
-            background: #e8f4fd; color: #2980b9; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <a href="index.html" class="btn-back">⬅️ Retour</a>
-        <h1>Lecteur Manuel</h1>
-        <button class="btn-edit" id="editBtn" onclick="editMode()">✏️ Modifier</button>
+    <div style="text-align: left;">
+        <button class="btn-back" onclick="window.location.href='index.html'">⬅️ Retour</button>
     </div>
 
-    <div id="editorContainer">
-        <div class="instruction">
-            Colle ton texte ci-dessous. Fais des sauts de ligne pour les pauses.
-        </div>
-        <textarea id="inputZone" placeholder="Colle tes questions ici..."></textarea>
-        <button class="btn-action" onclick="readMode()">✅ Valider & Lire</button>
+    <h1>🎙️ Lecteur Manuel</h1>
+
+    <div class="controls">
+        <button class="btn-load" onclick="forceLoadVoices()">🔄 1. Charger les Voix</button>
+        <select id="voices"><option>Clique sur le bouton vert ⬆️</option></select>
+
+        <label>Temps de pause sur "..." : <span id="pauseVal">4</span> secondes</label>
+        <input type="range" id="pauseTime" min="1" max="15" value="4" oninput="document.getElementById('pauseVal').textContent = this.value">
+        
+        <button class="btn-play" onclick="startReading()">▶️ LIRE LE TEXTE</button>
+        <button class="btn-stop" onclick="stopReading()">⏹️ STOP</button>
     </div>
 
-    <div id="readerZone"></div>
+    <textarea id="textInput" placeholder="Colle tes questions ici.
+Fais un saut de ligne et mets 3 petits points pour la pause.
+
+Exemple :
+Quelle est la capitale de la France ?
+...
+Réponse : Paris."></textarea>
+
+    <div id="statusBox"></div>
 
     <script>
-        // On récupère les éléments
-        const inputZone = document.getElementById('inputZone');
-        const readerZone = document.getElementById('readerZone');
-        const editorContainer = document.getElementById('editorContainer');
-        const editBtn = document.getElementById('editBtn');
+        const synth = window.speechSynthesis;
+        let voices = [];
 
-        // Sauvegarde auto : On remet le dernier texte utilisé s'il existe
-        const saved = localStorage.getItem('monTexte');
-        if(saved) inputZone.value = saved;
-
-        function readMode() {
-            const text = inputZone.value;
-            if (!text.trim()) return alert("La case est vide !");
-
-            // 1. Sauvegarde
-            localStorage.setItem('monTexte', text);
-
-            // 2. Mise en page
-            readerZone.innerText = text; // Affiche le texte proprement
+        // --- 1. CHARGEMENT DES VOIX ---
+        function forceLoadVoices() {
+            voices = synth.getVoices();
+            const select = document.getElementById('voices');
             
-            // 3. Bascule d'affichage
-            editorContainer.style.display = 'none';
-            readerZone.style.display = 'block';
-            editBtn.style.display = 'block';
+            if(voices.length === 0) { 
+                setTimeout(forceLoadVoices, 100); // On réessaie si vide
+                return; 
+            }
             
-            // Petit scroll en haut
-            window.scrollTo(0, 0);
+            select.innerHTML = '';
+            
+            // Filtre simple : On garde tout ce qui contient "fr"
+            const frVoices = voices.filter(v => v.lang.includes('fr') || v.name.includes('French'));
+            
+            if(frVoices.length === 0) {
+                const opt = document.createElement('option');
+                opt.textContent = "Aucune voix FR trouvée";
+                select.appendChild(opt);
+            } else {
+                frVoices.forEach((v, i) => {
+                    const opt = document.createElement('option');
+                    // Nettoyage du nom pour que ce soit propre
+                    let cleanName = v.name.replace('French', '').replace('(France)', '').replace('(Canada)', '').trim();
+                    opt.textContent = cleanName;
+                    opt.value = voices.indexOf(v); // Index global
+                    select.appendChild(opt);
+                    
+                    // Sélectionne Thomas par défaut si présent
+                    if(v.name.includes('Thomas')) select.value = opt.value;
+                });
+                document.querySelector('.btn-load').textContent = "✅ Voix Chargées";
+            }
+        }
+        // Essai automatique au démarrage
+        setTimeout(forceLoadVoices, 500);
+
+
+        // --- 2. LECTURE INTELLIGENTE ---
+        function stopReading() {
+            synth.cancel();
+            document.getElementById('statusBox').style.display = 'none';
+            document.getElementById('textInput').style.display = 'block';
         }
 
-        function editMode() {
-            // Retour à l'éditeur
-            editorContainer.style.display = 'block';
-            readerZone.style.display = 'none';
-            editBtn.style.display = 'none';
+        async function startReading() {
+            synth.cancel(); // Reset
+            
+            const text = document.getElementById('textInput').value;
+            if(!text.trim()) return alert("Colle du texte d'abord !");
+
+            // Bascule affichage (Cache le texte, montre le statut)
+            // document.getElementById('textInput').style.display = 'none'; // Décommente si tu veux cacher le texte pendant la lecture
+            const statusBox = document.getElementById('statusBox');
+            statusBox.style.display = 'block';
+            statusBox.textContent = "Démarrage...";
+
+            const pauseMs = document.getElementById('pauseTime').value * 1000;
+            const voiceIndex = document.getElementById('voices').value;
+            
+            // Découpage ligne par ligne
+            const lines = text.split('\n');
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                if (!line) continue; // On saute les lignes vides
+
+                // --- DETECTEUR DE PAUSE ---
+                // Si la ligne contient "..." ou juste un point "."
+                if (line === "..." || line === ".." || line === ".") {
+                    statusBox.textContent = "⏳ Réflexion (" + (pauseMs/1000) + "s)...";
+                    await new Promise(r => setTimeout(r, pauseMs));
+                    continue; // On passe à la ligne suivante sans lire les points
+                }
+
+                // --- LECTURE ---
+                statusBox.textContent = "🔊 " + line;
+                
+                const utter = new SpeechSynthesisUtterance(line);
+                // Applique la voix choisie
+                if(voices[voiceIndex]) utter.voice = voices[voiceIndex];
+                utter.rate = 1.0; // Vitesse normale
+
+                await new Promise(resolve => {
+                    utter.onend = resolve;
+                    utter.onerror = resolve; // Continue même si erreur
+                    synth.speak(utter);
+                });
+                
+                // Petite pause naturelle (0.5s) après chaque phrase parlée
+                await new Promise(r => setTimeout(r, 500));
+            }
+            
+            statusBox.textContent = "✅ Terminé !";
         }
     </script>
 </body>
