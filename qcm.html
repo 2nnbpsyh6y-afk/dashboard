@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de QCM</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f7f6; padding: 20px; color: #333; padding-bottom: 80px;}
+        h1 { color: #2c3e50; text-align: center; }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        /* Zone de collage du texte */
+        textarea { width: 100%; height: 150px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-family: monospace; margin-bottom: 10px; resize: vertical;}
+        
+        /* Boutons */
+        .btn { display: block; width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; text-decoration: none;}
+        .btn-primary { background-color: #3498db; color: white; }
+        .btn-secondary { background-color: #95a5a6; color: white; }
+        .btn-option { background-color: white; border: 2px solid #ddd; color: #333; transition: 0.2s; text-align: left;}
+        
+        /* États des réponses */
+        .btn-option:hover { background-color: #f0f0f0; }
+        .correct { background-color: #2ecc71 !important; border-color: #2ecc71; color: white; }
+        .wrong { background-color: #e74c3c !important; border-color: #e74c3c; color: white; }
+        
+        /* Carte de question */
+        .quiz-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 20px; display: none; }
+        .question-text { font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; }
+        .score-board { text-align: center; margin-top: 20px; font-weight: bold; color: #7f8c8d; }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="index.html" class="btn btn-secondary">⬅️ Retour au Dashboard</a>
+
+        <h1>⚡ Générateur de QCM</h1>
+
+        <div id="setupScreen">
+            <p style="font-size: 0.9rem; color: #666;">
+                Colle tes questions ci-dessous.<br>
+                <strong>Format :</strong> Question, puis Bonne réponse, puis Mauvaises réponses.<br>
+                Sépare les questions par une ligne vide.
+            </p>
+            <textarea id="rawInput" placeholder="Quelle est la capitale du Brésil ?
+Brasilia
+Rio
+Sao Paulo
+Salvador
+
+Quelle est la dérivée de x^2 ?
+2x
+x
+x^2
+1"></textarea>
+            <button class="btn btn-primary" onclick="startQuiz()">Lancer le Quiz</button>
+        </div>
+
+        <div id="quizScreen" class="quiz-card">
+            <div id="questionText" class="question-text"></div>
+            <div id="optionsContainer"></div>
+            <div id="feedback" style="text-align:center; margin:10px; font-weight:bold; min-height: 24px;"></div>
+            <button id="nextBtn" class="btn btn-primary hidden" onclick="nextQuestion()">Question Suivante ➡️</button>
+            <div class="score-board">Question <span id="currentQ">0</span> / <span id="totalQ">0</span></div>
+        </div>
+        
+        <div id="endScreen" class="quiz-card" style="text-align: center;">
+            <h2>Quiz Terminé ! 🏁</h2>
+            <p>Ton score : <strong id="finalScore" style="font-size: 1.5rem;"></strong></p>
+            <button class="btn btn-primary" onclick="location.reload()">Recommencer</button>
+        </div>
+    </div>
+
+    <script>
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function startQuiz() {
+            const text = document.getElementById('rawInput').value;
+            if (!text.trim()) return alert("Colle du texte d'abord !");
+
+            questions = parseText(text);
+            if (questions.length === 0) return alert("Format incorrect. Vérifie les sauts de ligne.");
+
+            document.getElementById('setupScreen').classList.add('hidden');
+            document.getElementById('quizScreen').style.display = 'block';
+            
+            currentQuestionIndex = 0;
+            score = 0;
+            showQuestion();
+        }
+
+        function parseText(raw) {
+            // Sépare par double saut de ligne
+            const blocks = raw.split(/\n\s*\n/);
+            const parsed = [];
+
+            blocks.forEach(block => {
+                const lines = block.split('\n').map(l => l.trim()).filter(l => l);
+                if (lines.length >= 3) {
+                    parsed.push({
+                        q: lines[0],
+                        correct: lines[1], // La consigne : la 1ère est la bonne
+                        others: lines.slice(2)
+                    });
+                }
+            });
+            return parsed;
+        }
+
+        function showQuestion() {
+            const qData = questions[currentQuestionIndex];
+            document.getElementById('questionText').textContent = qData.q;
+            document.getElementById('currentQ').textContent = currentQuestionIndex + 1;
+            document.getElementById('totalQ').textContent = questions.length;
+            document.getElementById('feedback').textContent = "";
+            document.getElementById('nextBtn').classList.add('hidden');
+
+            // Mélange des réponses
+            let allOptions = [
+                { text: qData.correct, isCorrect: true },
+                ...qData.others.map(txt => ({ text: txt, isCorrect: false }))
+            ];
+            allOptions = allOptions.sort(() => Math.random() - 0.5);
+
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+
+            allOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-option';
+                btn.textContent = opt.text;
+                btn.onclick = () => checkAnswer(btn, opt.isCorrect);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(btn, isCorrect) {
+            // Désactive tous les boutons
+            const allBtns = document.querySelectorAll('.btn-option');
+            allBtns.forEach(b => b.disabled = true);
+
+            if (isCorrect) {
+                btn.classList.add('correct');
+                document.getElementById('feedback').textContent = "✅ Bonne réponse !";
+                document.getElementById('feedback').style.color = "#2ecc71";
+                score++;
+            } else {
+                btn.classList.add('wrong');
+                document.getElementById('feedback').textContent = "❌ Raté !";
+                document.getElementById('feedback').style.color = "#e74c3c";
+                
+                // Montre la bonne réponse
+                allBtns.forEach(b => {
+                    // On retrouve la bonne réponse en comparant le texte (méthode simple) ou via data attribute
+                    if (b.textContent === questions[currentQuestionIndex].correct) {
+                        b.classList.add('correct');
+                    }
+                });
+            }
+            document.getElementById('nextBtn').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion();
+            } else {
+                showEndScreen();
+            }
+        }
+
+        function showEndScreen() {
+            document.getElementById('quizScreen').style.display = 'none';
+            document.getElementById('endScreen').style.display = 'block';
+            document.getElementById('finalScore').textContent = `${score} / ${questions.length}`;
+        }
+    </script>
+</body>
+</html>
