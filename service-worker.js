@@ -1,5 +1,5 @@
 // Changement de version pour forcer la mise à jour
-const CACHE_NAME = 'dashboard-v90'; 
+const CACHE_NAME = 'dashboard-v150'; 
 
 const urlsToCache = [
     '.',
