@@ -3,135 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lecteur IAE (Sélecteur)</title>
+    <title>Lecteur Google Voice</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f4f7f6; padding: 20px; text-align: center; padding-bottom: 80px;}
-        textarea { width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box;}
-        .controls { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        button { background-color: #3498db; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 50px; cursor: pointer; margin: 5px; width:100%; font-weight:bold;}
-        button.refresh { background-color: #27ae60; margin-bottom: 15px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f7f6; padding: 20px; text-align: center; padding-bottom: 80px;}
+        textarea { width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box; font-family: monospace;}
+        .controls { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: left;}
+        button { background-color: #4285f4; color: white; border: none; padding: 15px 20px; font-size: 18px; border-radius: 10px; cursor: pointer; margin: 5px 0; width: 100%; font-weight: bold;}
         button.stop { background-color: #e74c3c; }
-        label { display: block; margin: 10px 0 5px; font-weight: bold; }
-        select { width: 100%; padding: 12px; margin-top: 5px; border: 2px solid #3498db; border-radius: 8px; font-weight: bold; font-size: 16px; background: white;}
-        .status { font-size: 1.2rem; margin-top: 20px; color: #555; font-weight: bold; }
+        button.back { background-color: #95a5a6; margin-bottom: 20px;}
+        select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; background: #fff; margin-bottom: 15px; box-sizing: border-box; font-weight: bold;}
+        label { display: block; margin: 10px 0 5px; font-weight: bold; color: #333; }
+        .status { font-size: 1.2rem; margin-top: 20px; color: #555; font-weight: bold; text-align: center;}
+        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
     </style>
 </head>
 <body>
 
-    <h1>🎙️ Lecteur V6</h1>
+    <button class="back" onclick="window.location.href='index.html'">⬅️ Retour au Dashboard</button>
+
+    <h1>🎙️ Lecteur Google Voice</h1>
 
     <div class="controls">
-        <button class="refresh" onclick="forceLoadVoices()">🔄 1. Charger TOUTES les voix FR</button>
-
-        <label>Teste les doublons un par un :</label>
-        <select id="voices">
-            <option>Clique sur le bouton vert ⬆️</option>
+        <label>1. Choisir un Entraînement :</label>
+        <select id="quizSelector" onchange="loadQuiz()">
+            <option value="">-- Sélectionner un Quiz --</option>
+            <option value="actu">🌍 Actualité Expert</option>
+            <option value="maths">🧮 Maths Mental</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="culture">🇪🇺 Culture G</option>
         </select>
 
-        <hr style="margin: 20px 0; border:0; border-top:1px solid #eee;">
+        <label>2. Réglages :</label>
+        <div>Pause réflexion : <span id="pauseVal">4</span> sec</div>
+        <input type="range" id="pauseTime" min="1" max="10" value="4" style="width:100%" oninput="document.getElementById('pauseVal').textContent = this.value">
+        
+        <hr>
 
-        <label>Pause réflexion : <span id="pauseVal">4</span> sec</label>
-        <input type="range" id="pauseTime" min="1" max="15" value="4" style="width:100%" oninput="document.getElementById('pauseVal').textContent = this.value">
-
-        <label>Vitesse :</label>
-        <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1.0" style="width:100%">
-
-        <br><br>
-        <button onclick="startReading()">▶️ 2. Lire le Quiz</button>
+        <button onclick="startReading()">▶️ Lire avec Google (Gratuit)</button>
         <button class="stop" onclick="stopReading()">⏹️ Stop</button>
     </div>
 
-    <textarea id="textInput" placeholder="Colle ton script ici...
-Question 1 : ...
-Réponse : ..."></textarea>
-
+    <textarea id="textInput" placeholder="Colle ton script ici..."></textarea>
     <div class="status" id="statusDisplay">Prêt</div>
 
     <script>
-        const synth = window.speechSynthesis;
-        let voices = [];
-
-        function forceLoadVoices() {
-            voices = synth.getVoices();
-            const voiceSelect = document.getElementById('voices');
+        // --- BANQUE DE QUIZ ---
+        const QUIZZES = {
+            "actu": `Qui a été nommé Premier Ministre le 5 septembre 2024 ?
+...
+Réponse : Michel Barnier.
+Quel pays accueille la COP29 en novembre 2024 ?
+...
+Réponse : L'Azerbaïdjan.
+Quelle écrivaine sud-coréenne a reçu le Prix Nobel de Littérature 2024 ?
+...
+Réponse : Han Kang.
+Qui a succédé à Jens Stoltenberg à l'OTAN ?
+...
+Réponse : Mark Rutte.`,
             
-            if (voices.length === 0) {
-                setTimeout(forceLoadVoices, 100);
-                return;
-            }
+            "maths": `Question : Combien font 15 fois 15 ?
+...
+Réponse : 225.
+Question : 40 divisé par 0,5 ?
+...
+Réponse : 80.`,
 
-            voiceSelect.innerHTML = ''; 
-            
-            // ON PREND TOUT CE QUI EST FRANÇAIS
-            const frVoices = voices.filter(v => v.lang.includes('fr') || v.name.includes('French'));
+            "fr": `Question : Pluriel de un garde-manger ?
+...
+Réponse : Des garde-manger (Invariable).
+Question : Ils se sont succédé, faut-il un S ?
+...
+Réponse : Non, invariable.`,
 
-            if (frVoices.length === 0) {
-                const opt = document.createElement('option');
-                opt.textContent = "Aucune voix FR trouvée";
-                voiceSelect.appendChild(opt);
-            } else {
-                // ON AFFICHE TOUT, MEME LES DOUBLONS
-                frVoices.forEach((voice, index) => {
-                    const option = document.createElement('option');
-                    
-                    // On crée un nom unique pour repérer les doublons
-                    // Ex: "Thomas (1)" et "Thomas (2)"
-                    let displayName = voice.name.replace('French', '').replace('(France)', '').trim();
-                    displayName += " [Voix n°" + (index + 1) + "]"; 
-                    
-                    option.textContent = displayName;
-                    option.value = voices.indexOf(voice);
-                    voiceSelect.appendChild(option);
-                });
-                
-                document.querySelector('.refresh').textContent = "✅ " + frVoices.length + " Voix chargées";
-            }
+            "culture": `Question : Capitale de la Suisse ?
+...
+Réponse : Berne.
+Question : Année du Traité de Maastricht ?
+...
+Réponse : 1992.`
+        };
+
+        function loadQuiz() {
+            const val = document.getElementById('quizSelector').value;
+            if(QUIZZES[val]) document.getElementById('textInput').value = QUIZZES[val];
         }
 
-        setTimeout(forceLoadVoices, 500);
+        // --- LECTEUR GOOGLE ---
+        let currentAudio = null;
+        let stopFlag = false;
 
         function stopReading() {
-            synth.cancel();
-            document.getElementById('statusDisplay').textContent = "Arrêté";
+            stopFlag = true;
+            if (currentAudio) { 
+                currentAudio.pause(); 
+                currentAudio.currentTime = 0; 
+            }
+            document.getElementById('statusDisplay').textContent = "Arrêté ⏹️";
         }
 
         async function startReading() {
-            stopReading();
-            
+            stopFlag = false;
             const text = document.getElementById('textInput').value;
+            if(!text) return alert("Choisis un quiz ou colle du texte !");
+
             const pauseTime = document.getElementById('pauseTime').value * 1000;
-            const rate = document.getElementById('rate').value;
-            const voiceIndex = document.getElementById('voices').value;
-            
             const lines = text.split('\n');
             const statusDisplay = document.getElementById('statusDisplay');
 
             for (let i = 0; i < lines.length; i++) {
+                if (stopFlag) break;
                 const line = lines[i].trim();
-                
+                if (!line) continue;
+
+                // GESTION PAUSE
                 if (line === "" || line === "..." || line.includes("<break")) {
-                    statusDisplay.textContent = "⏳ Pause...";
+                    statusDisplay.textContent = "⏳ Réflexion (" + (pauseTime/1000) + "s)...";
                     await new Promise(r => setTimeout(r, pauseTime));
-                    continue; 
+                    continue;
                 }
 
+                // LECTURE VIA GOOGLE API
                 statusDisplay.textContent = "🔊 " + line;
-                const utterance = new SpeechSynthesisUtterance(line);
-                
-                if (voiceIndex && voices[voiceIndex]) {
-                    utterance.voice = voices[voiceIndex];
+                try {
+                    await playGoogleTTS(line);
+                } catch (e) {
+                    statusDisplay.textContent = "❌ Erreur Connexion";
+                    console.error(e);
+                    break;
                 }
                 
-                utterance.rate = rate;
-
-                await new Promise(resolve => {
-                    utterance.onend = resolve;
-                    synth.speak(utterance);
-                });
-                
-                await new Promise(r => setTimeout(r, 500));
+                // Petite pause naturelle
+                await new Promise(r => setTimeout(r, 300));
             }
-            statusDisplay.textContent = "✅ Terminé !";
+            if (!stopFlag) statusDisplay.textContent = "✅ Terminé !";
+        }
+
+        function playGoogleTTS(text) {
+            return new Promise((resolve, reject) => {
+                // Hack de l'API Google Translate
+                const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=fr&client=tw-ob`;
+                
+                if (currentAudio) { currentAudio.pause(); }
+                currentAudio = new Audio(url);
+                
+                currentAudio.onended = resolve;
+                currentAudio.onerror = reject;
+                currentAudio.play().catch(e => reject(e));
+            });
         }
     </script>
 </body>
