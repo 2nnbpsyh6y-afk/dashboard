@@ -3,100 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lecteur Manuel iOS</title>
+    <title>Lecteur Manuel</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #fff; padding: 20px; max-width: 800px; margin: 0 auto; color: #111;}
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: #fff; 
+            padding: 20px; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            color: #111;
+        }
         
-        /* Boutons de navigation */
-        .nav-bar { margin-bottom: 20px; display: flex; justify-content: space-between; }
-        button { padding: 12px 20px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .btn-back { background-color: #ecf0f1; color: #333; }
-        .btn-action { background-color: #3498db; color: white; width: 100%; margin-top: 10px;}
-        .btn-reset { background-color: #e74c3c; color: white; display: none;} /* Caché par défaut */
+        /* HEADER */
+        .header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;}
+        h1 { margin: 0; font-size: 1.2rem; color: #2c3e50; }
+        
+        /* BOUTONS */
+        button { 
+            padding: 12px 20px; 
+            border-radius: 8px; 
+            border: none; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        .btn-back { background-color: #ecf0f1; color: #333; text-decoration: none; padding: 10px 15px; border-radius: 8px; font-size: 0.9rem;}
+        .btn-action { background-color: #3498db; color: white; width: 100%; margin-top: 15px; font-size: 1.2rem;}
+        .btn-edit { background-color: #f39c12; color: white; display: none; } /* Caché au début */
 
-        /* Zone de saisie (Mode Édition) */
+        /* ZONE DE SAISIE (MODE EDIT) */
         #inputZone {
             width: 100%;
-            height: 300px;
-            border: 2px solid #ddd;
+            height: 60vh; /* Prend 60% de la hauteur de l'écran */
+            border: 2px solid #eee;
             border-radius: 12px;
-            padding: 15px;
-            font-size: 16px;
-            font-family: monospace;
+            padding: 20px;
+            font-size: 18px;
+            font-family: -apple-system, sans-serif;
             box-sizing: border-box;
             display: block;
+            resize: none;
         }
 
-        /* Zone de lecture (Mode Lecture) - Cachée au début */
+        /* ZONE DE LECTURE (MODE READ) */
         #readerZone {
-            display: none;
-            font-size: 24px; /* Gros pour bien voir */
+            display: none; /* Caché au début */
+            font-size: 26px; /* Très gros pour que l'iPad lise bien */
             line-height: 1.6;
             text-align: left;
-            padding: 20px;
-            white-space: pre-wrap; /* Respecte les sauts de ligne */
+            padding: 10px;
+            white-space: pre-wrap; /* Garde les sauts de ligne */
         }
 
-        h1 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
-        .tip { background: #fff3cd; padding: 10px; border-radius: 8px; font-size: 0.9rem; color: #856404; margin-bottom: 15px; text-align: center;}
+        .instruction {
+            background: #e8f4fd; color: #2980b9; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
 
-    <div class="nav-bar">
-        <button class="btn-back" onclick="window.location.href='index.html'">⬅️ Retour</button>
-        <button class="btn-reset" id="resetBtn" onclick="resetMode()">✏️ Modifier le texte</button>
+    <div class="header">
+        <a href="index.html" class="btn-back">⬅️ Retour</a>
+        <h1>Lecteur Manuel</h1>
+        <button class="btn-edit" id="editBtn" onclick="editMode()">✏️ Modifier</button>
     </div>
 
-    <h1>🎙️ Lecteur Manuel</h1>
-
-    <div id="editContainer">
-        <div class="tip">
-            Colle ton texte ci-dessous. Utilise des sauts de ligne ou des points "." pour marquer les pauses.
+    <div id="editorContainer">
+        <div class="instruction">
+            Colle ton texte ci-dessous. Fais des sauts de ligne pour les pauses.
         </div>
-        <textarea id="inputZone" placeholder="Exemple :
-Quelle est la capitale de la France ?
-.
-.
-Réponse : Paris."></textarea>
-        <button class="btn-action" onclick="startMode()">✅ Valider pour Lecture</button>
+        <textarea id="inputZone" placeholder="Colle tes questions ici..."></textarea>
+        <button class="btn-action" onclick="readMode()">✅ Valider & Lire</button>
     </div>
 
     <div id="readerZone"></div>
 
     <script>
-        // Sauvegarde automatique du texte pour ne pas le perdre
-        const savedText = localStorage.getItem('manualText');
-        if (savedText) {
-            document.getElementById('inputZone').value = savedText;
+        // On récupère les éléments
+        const inputZone = document.getElementById('inputZone');
+        const readerZone = document.getElementById('readerZone');
+        const editorContainer = document.getElementById('editorContainer');
+        const editBtn = document.getElementById('editBtn');
+
+        // Sauvegarde auto : On remet le dernier texte utilisé s'il existe
+        const saved = localStorage.getItem('monTexte');
+        if(saved) inputZone.value = saved;
+
+        function readMode() {
+            const text = inputZone.value;
+            if (!text.trim()) return alert("La case est vide !");
+
+            // 1. Sauvegarde
+            localStorage.setItem('monTexte', text);
+
+            // 2. Mise en page
+            readerZone.innerText = text; // Affiche le texte proprement
+            
+            // 3. Bascule d'affichage
+            editorContainer.style.display = 'none';
+            readerZone.style.display = 'block';
+            editBtn.style.display = 'block';
+            
+            // Petit scroll en haut
+            window.scrollTo(0, 0);
         }
 
-        function startMode() {
-            const text = document.getElementById('inputZone').value;
-            if (!text.trim()) return alert("Colle du texte d'abord !");
-
-            // Sauvegarde
-            localStorage.setItem('manualText', text);
-
-            // Bascule l'affichage
-            document.getElementById('editContainer').style.display = 'none';
-            const reader = document.getElementById('readerZone');
-            reader.style.display = 'block';
-            
-            // Affiche le texte proprement
-            reader.innerText = text;
-
-            // Affiche le bouton "Modifier"
-            document.getElementById('resetBtn').style.display = 'block';
-            
-            // Petit message temporaire
-            alert("Texte prêt ! Active maintenant le contrôleur vocal de ton iPad.");
-        }
-
-        function resetMode() {
-            document.getElementById('editContainer').style.display = 'block';
-            document.getElementById('readerZone').style.display = 'none';
-            document.getElementById('resetBtn').style.display = 'none';
+        function editMode() {
+            // Retour à l'éditeur
+            editorContainer.style.display = 'block';
+            readerZone.style.display = 'none';
+            editBtn.style.display = 'none';
         }
     </script>
 </body>
