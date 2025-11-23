@@ -14,6 +14,7 @@
         label { display: block; margin: 10px 0 5px; font-weight: bold; }
         select { width: 100%; padding: 12px; margin-top: 5px; border: 2px solid #3498db; border-radius: 8px; font-weight: bold; font-size: 16px; background: white;}
         .status { font-size: 1.2rem; margin-top: 20px; color: #555; font-weight: bold; }
+        .warning { color: red; font-size: 0.9rem; margin-top: 5px; display:none;}
     </style>
 </head>
 <body>
@@ -22,8 +23,10 @@
 
     <div class="controls">
         <button class="refresh" onclick="forceLoadVoices()">🔄 1. Charger les Voix FR</button>
+        
+        <div id="missingAudrey" class="warning">⚠️ Audrey introuvable. Vérifie qu'elle est bien téléchargée dans Réglages > Accessibilité.</div>
 
-        <label>Voix disponibles :</label>
+        <label>Choix de la voix :</label>
         <select id="voices">
             <option>Clique sur le bouton vert ⬆️</option>
         </select>
@@ -54,7 +57,9 @@ Réponse : ..."></textarea>
         function forceLoadVoices() {
             voices = synth.getVoices();
             const voiceSelect = document.getElementById('voices');
+            const warning = document.getElementById('missingAudrey');
             
+            // Si la liste est vide, on réessaie
             if (voices.length === 0) {
                 setTimeout(forceLoadVoices, 100);
                 return;
@@ -62,32 +67,49 @@ Réponse : ..."></textarea>
 
             voiceSelect.innerHTML = ''; 
             
-            // --- FILTRE DRASTIQUE ---
-            // On ne garde QUE les voix dont la langue commence strictement par 'fr'
-            const frVoices = voices.filter(v => v.lang.startsWith('fr'));
+            // --- FILTRE STRICT : Uniquement les voix qui contiennent 'fr' ou 'French' ---
+            // On jette Grandma, Rocko et les autres
+            const frVoices = voices.filter(v => v.lang.includes('fr') || v.lang.includes('FR') || v.name.includes('French'));
+
+            let audreyFound = false;
 
             if (frVoices.length === 0) {
                 const opt = document.createElement('option');
-                opt.textContent = "Aucune voix FR (Vérifie tes réglages)";
+                opt.textContent = "Aucune voix FR trouvée (Bug iOS)";
                 voiceSelect.appendChild(opt);
             } else {
                 frVoices.forEach((voice) => {
                     const option = document.createElement('option');
+                    
                     // Nettoyage du nom
-                    let cleanName = voice.name.replace('French', '').replace('(France)', '').replace('Enhanced', 'Premium').trim();
+                    let cleanName = voice.name.replace('French', '').replace('(France)', '').replace('(Canada)', '').replace('Enhanced', '').trim();
+                    
+                    // On ajoute le pays pour être sûr
+                    if(voice.lang.includes('CA')) cleanName += " (Québec)";
+                    
                     option.textContent = cleanName;
                     option.value = voices.indexOf(voice);
                     voiceSelect.appendChild(option);
 
-                    // SI AUDREY EST LÀ, ON LA PREND DIRECT
+                    // SI C'EST AUDREY, ON LA SELECTIONNE
                     if (voice.name.includes('Audrey')) {
                         voiceSelect.value = option.value;
+                        audreyFound = true;
                     }
                 });
-                document.querySelector('.refresh').textContent = "✅ " + frVoices.length + " Voix FR trouvées";
+                
+                document.querySelector('.refresh').textContent = "✅ " + frVoices.length + " Voix FR chargées";
+            }
+
+            // Si on n'a pas trouvé Audrey, on affiche l'alerte rouge
+            if (!audreyFound) {
+                warning.style.display = "block";
+            } else {
+                warning.style.display = "none";
             }
         }
 
+        // Essai auto
         setTimeout(forceLoadVoices, 500);
 
         function stopReading() {
